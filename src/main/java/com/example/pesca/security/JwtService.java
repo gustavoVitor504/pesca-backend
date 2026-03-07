@@ -6,7 +6,7 @@ import org.springframework.beans.factory.annotation.Value;
 import org.springframework.security.core.userdetails.UserDetails;
 import org.springframework.stereotype.Service;
 
-import java.security.Key;
+import javax.crypto.SecretKey;
 import java.util.Date;
 
 @Service
@@ -18,44 +18,43 @@ public class JwtService {
     @Value("${jwt.expiration}")
     private long expiration;
 
-    private Key getKey() {
+    private SecretKey getKey() {
         return Keys.hmacShaKeyFor(secret.getBytes());
     }
 
     public String generateToken(UserDetails userDetails) {
         return Jwts.builder()
-                .setSubject(userDetails.getUsername())
-                .setIssuedAt(new Date())
-                .setExpiration(new Date(System.currentTimeMillis() + expiration))
-                .signWith(getKey(), SignatureAlgorithm.HS256)
+                .subject(userDetails.getUsername())        // ← era setSubject
+                .issuedAt(new Date())                      // ← era setIssuedAt
+                .expiration(new Date(System.currentTimeMillis() + expiration)) // ← era setExpiration
+                .signWith(getKey())                        // ← removeu SignatureAlgorithm
                 .compact();
     }
 
     public String extractEmail(String token) {
-        return Jwts.parserBuilder()
-                .setSigningKey(getKey())
+        return Jwts.parser()                               // ← era parserBuilder
+                .verifyWith(getKey())                      // ← era setSigningKey
                 .build()
-                .parseClaimsJws(token)
-                .getBody()
+                .parseSignedClaims(token)                  // ← era parseClaimsJws
+                .getPayload()                              // ← era getBody
                 .getSubject();
     }
 
     public boolean isValid(String token, UserDetails userDetails) {
         try {
             String email = extractEmail(token);
-            return email.equals(userDetails.getUsername()) &&
-                    !isExpired(token);
+            return email.equals(userDetails.getUsername()) && !isExpired(token);
         } catch (JwtException e) {
             return false;
         }
     }
 
     private boolean isExpired(String token) {
-        return Jwts.parserBuilder()
-                .setSigningKey(getKey())
+        return Jwts.parser()
+                .verifyWith(getKey())
                 .build()
-                .parseClaimsJws(token)
-                .getBody()
+                .parseSignedClaims(token)
+                .getPayload()
                 .getExpiration()
                 .before(new Date());
     }
