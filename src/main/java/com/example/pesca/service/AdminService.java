@@ -71,13 +71,14 @@ public class AdminService {
 
     private AdminDTO.OrderSummary toOrderSummary(Order order) {
         AdminDTO.OrderSummary summary = new AdminDTO.OrderSummary();
+
         summary.setId(order.getId());
         summary.setUserName(order.getUser().getName());
         summary.setUserEmail(order.getUser().getEmail());
         summary.setTotal(order.getTotal());
         summary.setStatus(order.getStatus());
         summary.setCreatedAt(order.getCreatedAt());
-        summary.setItems(order.getItems().stream().map(item -> {
+        summary.setItems(order.getItems().stream().filter(item -> item != null && item.getProduct() != null).map(item -> {
             AdminDTO.OrderSummary.ItemSummary i = new AdminDTO.OrderSummary.ItemSummary();
             i.setProductName(item.getProduct().getName());
             i.setQuantity(item.getQuantity());
