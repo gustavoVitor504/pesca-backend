@@ -81,7 +81,7 @@ public class AdminService {
             AdminDTO.OrderSummary.ItemSummary i = new AdminDTO.OrderSummary.ItemSummary();
             i.setProductName(item.getProduct().getName());
             i.setQuantity(item.getQuantity());
-            i.setPrice(item.getPrice());
+            i.setPrice(item.getUnitPrice());
             return i;
         }).collect(Collectors.toList()));
         return summary;
