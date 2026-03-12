@@ -91,4 +91,23 @@ public class PaymentService {
             throw new RuntimeException("Erro ao processar pagamento: " + e.getMessage());
         }
     }
+    public void atualizarStatusPorPaymentId(String paymentId) {
+        try {
+            MercadoPagoConfig.setAccessToken(accessToken);
+            PaymentClient client = new PaymentClient();
+            Payment payment = client.get(Long.parseLong(paymentId));
+
+            // Busca o pedido pelo external reference ou pelo id do pagamento
+            // Por ora atualiza o pedido mais recente com status pending
+            if ("approved".equals(payment.getStatus())) {
+                orderRepository.findTopByStatusOrderByIdDesc(Order.Status.PENDING)
+                        .ifPresent(order -> {
+                            order.setStatus(Order.Status.CONFIRMED);
+                            orderRepository.save(order);
+                        });
+            }
+        } catch (Exception e) {
+            System.err.println("Erro no webhook: " + e.getMessage());
+        }
+    }
 }
