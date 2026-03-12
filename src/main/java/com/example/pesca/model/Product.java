@@ -20,7 +20,7 @@ public class Product {
     @Column(nullable = false)
     private String name;
 
-    @Column(columnDefinition = "TEXT")
+    @Column(length = 1000)
     private String description;
 
     @Column(nullable = false)
@@ -28,13 +28,16 @@ public class Product {
 
     private BigDecimal originalPrice;
 
+    @Column(nullable = false)
     private String category;
 
     private String image;
 
     private Integer discount;
 
-    private Integer rating;
+    @Builder.Default
+    private Integer rating = 5;
 
-    private Integer stock;
+    @Builder.Default
+    private Integer stock = 0;
 }

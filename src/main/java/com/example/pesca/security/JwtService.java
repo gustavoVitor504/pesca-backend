@@ -8,6 +8,7 @@ import org.springframework.stereotype.Service;
 
 import javax.crypto.SecretKey;
 import java.util.Date;
+import java.util.Map;
 
 @Service
 public class JwtService {
@@ -23,21 +24,37 @@ public class JwtService {
     }
 
     public String generateToken(UserDetails userDetails) {
+        // Inclui a role como claim extra no token
+        String role = userDetails.getAuthorities().stream()
+                .findFirst()
+                .map(a -> a.getAuthority())
+                .orElse("ROLE_USER");
+
         return Jwts.builder()
-                .subject(userDetails.getUsername())        // ← era setSubject
-                .issuedAt(new Date())                      // ← era setIssuedAt
-                .expiration(new Date(System.currentTimeMillis() + expiration)) // ← era setExpiration
-                .signWith(getKey())                        // ← removeu SignatureAlgorithm
+                .subject(userDetails.getUsername())
+                .claims(Map.of("role", role))             // ← role no token
+                .issuedAt(new Date())
+                .expiration(new Date(System.currentTimeMillis() + expiration))
+                .signWith(getKey())
                 .compact();
     }
 
     public String extractEmail(String token) {
-        return Jwts.parser()                               // ← era parserBuilder
-                .verifyWith(getKey())                      // ← era setSigningKey
+        return Jwts.parser()
+                .verifyWith(getKey())
                 .build()
-                .parseSignedClaims(token)                  // ← era parseClaimsJws
-                .getPayload()                              // ← era getBody
+                .parseSignedClaims(token)
+                .getPayload()
                 .getSubject();
+    }
+
+    public String extractRole(String token) {
+        return (String) Jwts.parser()
+                .verifyWith(getKey())
+                .build()
+                .parseSignedClaims(token)
+                .getPayload()
+                .get("role");
     }
 
     public boolean isValid(String token, UserDetails userDetails) {
