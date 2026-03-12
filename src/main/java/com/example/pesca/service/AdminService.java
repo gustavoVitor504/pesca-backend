@@ -8,6 +8,7 @@ import com.example.pesca.repository.ProductRepository;
 import com.example.pesca.repository.UserRepository;
 import lombok.RequiredArgsConstructor;
 import org.springframework.stereotype.Service;
+import org.springframework.transaction.annotation.Transactional;
 
 import java.math.BigDecimal;
 import java.util.List;
@@ -56,12 +57,14 @@ public class AdminService {
     }
 
     // ===== PEDIDOS =====
+    @Transactional(readOnly = true)
     public List<AdminDTO.OrderSummary> getAllOrders() {
         return orderRepository.findAllByOrderByCreatedAtDesc().stream()
                 .map(this::toOrderSummary)
                 .collect(Collectors.toList());
     }
 
+    @Transactional
     public AdminDTO.OrderSummary updateOrderStatus(Long id, Order.Status status) {
         Order order = orderRepository.findById(id)
                 .orElseThrow(() -> new RuntimeException("Pedido não encontrado"));
