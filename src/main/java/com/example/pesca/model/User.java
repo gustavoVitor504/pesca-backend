@@ -30,4 +30,10 @@ public class User {
     public enum Role {
         USER, ADMIN
     }
+    @Column(nullable = false)
+    @Builder.Default
+    private boolean emailVerified = false;
+
+    @Column(unique = true)
+    private String verificationToken;
 }

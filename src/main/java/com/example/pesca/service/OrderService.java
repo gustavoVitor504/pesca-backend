@@ -22,6 +22,7 @@ public class OrderService {
     private final OrderRepository orderRepository;
     private final ProductRepository productRepository;
     private final UserRepository userRepository;
+    private final EmailService emailService;
 
     @Transactional
     public OrderResponse create(String userEmail, CreateRequest request) {
@@ -51,6 +52,19 @@ public class OrderService {
         order.setTotal(total);
 
         Order saved = orderRepository.save(order);
+
+        // Email de confirmação (async — não bloqueia a resposta)
+        try {
+            emailService.enviarConfirmacaoPedido(
+                    user.getEmail(),
+                    user.getName(),
+                    saved.getId(),
+                    saved.getTotal()
+            );
+        } catch (Exception e) {
+            System.err.println("Erro ao enviar email de pedido: " + e.getMessage());
+        }
+
         return toResponse(saved);
     }
 

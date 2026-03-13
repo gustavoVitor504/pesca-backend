@@ -1,5 +1,6 @@
 package com.example.pesca.security;
 
+import io.jsonwebtoken.JwtException;
 import jakarta.servlet.FilterChain;
 import jakarta.servlet.ServletException;
 import jakarta.servlet.http.HttpServletRequest;
@@ -35,8 +36,14 @@ public class JwtAuthFilter extends OncePerRequestFilter {
         }
 
         String token = authHeader.substring(7);
-        String email = jwtService.extractEmail(token);
-
+        String email = null;
+        try {
+            email = jwtService.extractEmail(token);
+        } catch (JwtException e) {
+            // token inválido ou expirado — ignora e continua sem autenticar
+            filterChain.doFilter(request, response);
+            return;
+        }
         if (email != null && SecurityContextHolder.getContext().getAuthentication() == null) {
             UserDetails userDetails = userDetailsService.loadUserByUsername(email);
             System.out.println("=== DEBUG JWT ===");
