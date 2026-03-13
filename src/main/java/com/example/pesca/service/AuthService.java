@@ -44,9 +44,14 @@ public class AuthService {
 
         userRepository.save(user);
 
-        emailService.enviarVerificacaoEmail(user.getEmail(), verificationToken);
+        new Thread(() -> {
+            try {
+                emailService.enviarVerificacaoEmail(user.getEmail(), verificationToken);
+            } catch (Exception e) {
+                System.err.println("Erro ao enviar email: " + e.getMessage());
+            }
+        }).start();
 
-        // Não retorna token — usuário precisa verificar email primeiro
         return new AuthResponse(null, user.getName(), user.getEmail(), user.getRole().name());
     }
 
