@@ -1,21 +1,21 @@
 package com.example.pesca.service;
 
+import com.sendgrid.*;
+import com.sendgrid.helpers.mail.Mail;
+import com.sendgrid.helpers.mail.objects.*;
 import lombok.RequiredArgsConstructor;
 import org.springframework.beans.factory.annotation.Value;
-import org.springframework.mail.javamail.JavaMailSender;
-import org.springframework.mail.javamail.MimeMessageHelper;
 import org.springframework.stereotype.Service;
 
-import jakarta.mail.internet.MimeMessage;
 import java.math.BigDecimal;
 
 @Service
-@RequiredArgsConstructor
 public class EmailService {
 
-    private final JavaMailSender mailSender;
+    @Value("${sendgrid.api-key}")
+    private String apiKey;
 
-    @Value("${spring.mail.username}")
+    @Value("${sendgrid.from-email}")
     private String fromEmail;
 
     @Value("${app.frontend-url}")
@@ -26,15 +26,12 @@ public class EmailService {
         String html = """
             <div style="font-family: Arial, sans-serif; max-width: 600px; margin: 0 auto;">
                 <h2 style="color: #1a6478;">Bem-vindo à Tuvira & Tevaro!</h2>
-                <p>Clique no botão abaixo para verificar seu email e ativar sua conta:</p>
+                <p>Clique no botão abaixo para verificar seu email:</p>
                 <a href="%s" style="display:inline-block; background:#1a6478; color:white;
                    padding:12px 24px; border-radius:8px; text-decoration:none; margin:16px 0;">
                    Verificar Email
                 </a>
-                <p style="color:#666; font-size:0.9rem;">
-                    Se você não criou uma conta, ignore este email.<br>
-                    Link válido por 24 horas.
-                </p>
+                <p style="color:#666; font-size:0.9rem;">Link válido por 24 horas.</p>
             </div>
             """.formatted(link);
 
@@ -53,7 +50,6 @@ public class EmailService {
                     <p><strong>Total:</strong> R$ %.2f</p>
                     <p><strong>Status:</strong> Pendente</p>
                 </div>
-                <p>Você receberá atualizações sobre seu pedido por email.</p>
                 <p style="color:#666;">Obrigado por comprar na Tuvira & Tevaro!</p>
             </div>
             """.formatted(nomeCliente, pedidoId, total);
@@ -63,15 +59,21 @@ public class EmailService {
 
     private void enviarEmail(String to, String subject, String html) {
         try {
-            MimeMessage message = mailSender.createMimeMessage();
-            MimeMessageHelper helper = new MimeMessageHelper(message, true, "UTF-8");
-            helper.setFrom(fromEmail);
-            helper.setTo(to);
-            helper.setSubject(subject);
-            helper.setText(html, true);
-            mailSender.send(message);
+            Email from = new Email(fromEmail);
+            Email toEmail = new Email(to);
+            Content content = new Content("text/html", html);
+            Mail mail = new Mail(from, subject, toEmail, content);
+
+            SendGrid sg = new SendGrid(apiKey);
+            Request request = new Request();
+            request.setMethod(Method.POST);
+            request.setEndpoint("mail/send");
+            request.setBody(mail.build());
+
+            Response response = sg.api(request);
+            System.out.println("Email enviado. Status: " + response.getStatusCode());
         } catch (Exception e) {
-            System.err.println("Erro ao enviar email para " + to + ": " + e.getMessage());
+            System.err.println("Erro ao enviar email: " + e.getMessage());
         }
     }
 }
