@@ -33,6 +33,9 @@ public class Product {
 
     private String image;
 
+    @Column(columnDefinition = "text")
+    private String images;
+
     private Integer discount;
 
     @Builder.Default

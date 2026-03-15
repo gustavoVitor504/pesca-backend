@@ -51,6 +51,7 @@ public class AdminService {
         product.setOriginalPrice(request.getOriginalPrice());
         product.setCategory(request.getCategory());
         product.setImage(request.getImage());
+        product.setImages(request.getImages());
         product.setDiscount(request.getDiscount());
         product.setRating(request.getRating() != null ? request.getRating() : 5);
         product.setStock(request.getStock() != null ? request.getStock() : 0);

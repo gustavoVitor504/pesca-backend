@@ -17,6 +17,7 @@ public class AdminDTO {
         private BigDecimal originalPrice;
         private String category;
         private String image;
+        private String images;
         private Integer discount;
         private Integer rating;
         private Integer stock;
