@@ -3,6 +3,7 @@ package com.example.pesca.service;
 import com.example.pesca.dto.PaymentDTO;
 import com.example.pesca.model.Order;
 import com.example.pesca.repository.OrderRepository;
+import com.example.pesca.repository.ProductRepository;
 import com.mercadopago.MercadoPagoConfig;
 import com.mercadopago.client.payment.PaymentClient;
 import com.mercadopago.client.payment.PaymentCreateRequest;
@@ -12,6 +13,7 @@ import com.mercadopago.resources.payment.Payment;
 import lombok.RequiredArgsConstructor;
 import org.springframework.beans.factory.annotation.Value;
 import org.springframework.stereotype.Service;
+import org.springframework.transaction.annotation.Transactional;
 
 import java.math.BigDecimal;
 
@@ -24,6 +26,9 @@ public class PaymentService {
 
     private final OrderRepository orderRepository;
 
+    private final ProductRepository productRepository;
+
+    @Transactional
     public PaymentDTO.Response processPayment(PaymentDTO.Request request) {
         try {
             MercadoPagoConfig.setAccessToken(accessToken);
@@ -51,9 +56,12 @@ public class PaymentService {
             // Atualiza status do pedido
             if (request.orderId() != null) {
                 orderRepository.findById(request.orderId()).ifPresent(order -> {
-                    order.setStatus("approved".equals(payment.getStatus())
-                            ? Order.Status.CONFIRMED
-                            : Order.Status.PENDING);
+                    if ("approved".equals(payment.getStatus())) {
+                        order.setStatus(Order.Status.CONFIRMED);
+                        decrementarEstoque(order);
+                    } else {
+                        order.setStatus(Order.Status.PENDING);
+                    }
                     orderRepository.save(order);
                 });
             }
@@ -91,6 +99,7 @@ public class PaymentService {
             throw new RuntimeException("Erro ao processar pagamento: " + e.getMessage());
         }
     }
+    @Transactional
     public void atualizarStatusPorPaymentId(String paymentId) {
         try {
             MercadoPagoConfig.setAccessToken(accessToken);
@@ -103,11 +112,21 @@ public class PaymentService {
                 orderRepository.findTopByStatusOrderByIdDesc(Order.Status.PENDING)
                         .ifPresent(order -> {
                             order.setStatus(Order.Status.CONFIRMED);
+                            decrementarEstoque(order);
                             orderRepository.save(order);
                         });
             }
         } catch (Exception e) {
             System.err.println("Erro no webhook: " + e.getMessage());
         }
+    }
+    private void decrementarEstoque(Order order) {
+        order.getItems().forEach(item -> {
+            productRepository.findById(item.getProduct().getId()).ifPresent(product -> {
+                int novoEstoque = Math.max(0, product.getStock() - item.getQuantity());
+                product.setStock(novoEstoque);
+                productRepository.save(product);
+            });
+        });
     }
 }

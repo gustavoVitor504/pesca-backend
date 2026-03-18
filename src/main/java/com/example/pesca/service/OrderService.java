@@ -68,6 +68,7 @@ public class OrderService {
         return toResponse(saved);
     }
 
+    @Transactional(readOnly = true)
     public List<OrderResponse> findByUser(String userEmail) {
         User user = userRepository.findByEmail(userEmail)
                 .orElseThrow(() -> new RuntimeException("Usuário não encontrado."));
